@@ -53,8 +53,8 @@ add_library(spindumplib
   spindump_analyze_aggregate.c
   spindump_analyze_coap.c
   spindump_analyze_dns.c
-  spindump_analyze_ip.c 
-  spindump_analyze_icmp.c 
+  spindump_analyze_ip.c
+  spindump_analyze_icmp.c
   spindump_analyze_quic.c
   spindump_analyze_quic_parser.c
   spindump_analyze_tcp.c
@@ -67,14 +67,14 @@ add_library(spindumplib
   spindump_connections_search.c
   spindump_connections_set.c
   spindump_connections_set_iterator.c
-  spindump_eventformatter.c 
-  spindump_eventformatter_text.c 
-  spindump_eventformatter_json.c 
+  spindump_eventformatter.c
+  spindump_eventformatter_text.c
+  spindump_eventformatter_json.c
   spindump_event.c
   spindump_event_parser_json.c
   spindump_event_parser_text.c
-  spindump_json.c 
-  spindump_json_value.c 
+  spindump_json.c
+  spindump_json_value.c
   spindump_memdebug.c
   spindump_mid.c
   spindump_packet.c
@@ -89,15 +89,22 @@ add_library(spindumplib
   spindump_spin.c
   spindump_stats.c
   spindump_table.c
-  spindump_util.c 
-  spindump_utildebug.c 
-  spindump_utilerror.c 
+  spindump_util.c
+  spindump_utildebug.c
+  spindump_utilerror.c
 )
 
 target_include_directories(spindumplib
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
+if(ENABLE_SANITIZERS)
+  target_link_libraries(spindumplib
+  PRIVATE
+    -fsanitize=address
+  )
+endif()
 
 target_link_libraries(spindumplib
   PRIVATE
@@ -131,9 +138,15 @@ add_custom_command(
   DEPENDS spindump_checksource.sh
 )
 
+if(VALGRIND AND NOT ENABLE_SANITIZERS)
+  set(SPINDUMP_TEST_CMD valgrind --error-exitcode=1 --leak-check=full --show-reachable=yes ./spindump_test)
+else()
+  set(SPINDUMP_TEST_CMD ./spindump_test)
+endif()
+
 add_custom_command(
   OUTPUT spindump_test1.out
-  COMMAND spindump_test
+  COMMAND ${SPINDUMP_TEST_CMD}
   ARGS  > spindump_test1.out
   DEPENDS spindump_test
 )
@@ -153,8 +166,8 @@ target_link_libraries(spindump_test spindumplib)
 
 include( CTest )
 
-add_test( spindump_checksource spindump_checksource.sh )  
-add_test( spindump_test spindump_test )  
+add_test( spindump_checksource spindump_checksource.sh )
+add_test( spindump_test spindump_test )
 add_test( spindump_testtraces spindump_testtraces.sh )
 
 #
@@ -180,7 +193,7 @@ install(SCRIPT spindump_install.sh)
 add_custom_target(uninstall
                   COMMAND sh spindump_uninstall.sh
 )
-                  
+
 #
 # Word counts
 #
@@ -188,3 +201,4 @@ add_custom_target(uninstall
 add_custom_target(wc
                   COMMAND sh spindump_wc.sh
 )
+

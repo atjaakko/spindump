@@ -49,7 +49,17 @@ if(CPPCHECK)
   set(CMAKE_C_CPPCHECK ${CPPCHECK} -q --inline-suppr --enable=all)
 endif()
 
+find_program(VALGRIND NAMES valgrind)
+
 include(CheckCCompilerFlag)
+function(add_flag_if_found FLAG)
+  string(REGEX REPLACE "[-=+]" "_" F ${FLAG})
+  check_c_compiler_flag(${FLAG} ${F})
+  if(${F})
+    add_compile_options(${FLAG})
+  endif()
+endfunction()
+
 foreach(FLAG
     -pipe
     -I/opt/local/include
@@ -58,7 +68,7 @@ foreach(FLAG
     -fno-omit-frame-pointer
     -fno-optimize-sibling-calls -fno-common
     -Wno-covered-switch-default
-    -Wno-unused-parameter 
+    -Wno-unused-parameter
     -Wno-disabled-macro-expansion
     # need to include the following to make PCAP compile
     -Wno-padded
@@ -72,12 +82,14 @@ foreach(FLAG
 # uncomment the following line if you're doing profiling with GNU performance tools (gperf)
     # -pg
   )
-  string(REGEX REPLACE "[-=+]" "_" F ${FLAG})
-  check_c_compiler_flag(${FLAG} ${F})
-  if(${F})
-    add_compile_options(${FLAG})
-  endif()
+  add_flag_if_found(${FLAG})
 endforeach()
+
+if(ENABLE_SANITIZERS)
+  set(CMAKE_REQUIRED_LIBRARIES -fsanitize=address)
+  add_flag_if_found("-fsanitize=address")
+  add_flag_if_found("-fsanitize=leak")
+endif()
 
 #
 # Directories
